@@ -30,7 +30,7 @@ jobs:
         continue-on-error: true
 
       - name: Create Google Cloud credentials file
-        if: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON != '' }}
+        if: secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON != ''
         run: |
           echo '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}' > extreme-battery-463111-f5.json
           echo "✅ Google Cloud credentials file created"
