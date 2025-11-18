@@ -24,8 +24,9 @@ jobs:
 
       - name: Create Google Cloud credentials file
         run: |
-          if [ -n "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}" ]; then
-            echo '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}' > extreme-battery-463111-f5.json
+          CREDENTIALS="${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}"
+          if [ -n "${CREDENTIALS}" ]; then
+            echo "${CREDENTIALS}" > extreme-battery-463111-f5.json
             echo "✅ Google Cloud credentials file created"
             # Verify JSON is valid
             if command -v jq &> /dev/null; then
