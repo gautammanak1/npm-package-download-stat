@@ -7,10 +7,11 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
       - "automated"
+      - "skip-ci"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -18,6 +19,10 @@ updates:
       - "gautammanak1"
     assignees:
       - "gautammanak1"
+    # Ignore major version updates to prevent breaking changes
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"

@@ -8,6 +8,8 @@ jobs:
   check-pr:
     name: PR Validation
     runs-on: ubuntu-latest
+    # Skip commit message validation for Dependabot PRs
+    if: github.actor != 'dependabot[bot]'
     
     steps:
       - name: Checkout code
@@ -25,6 +27,7 @@ jobs:
         run: npm ci
 
       - name: Check PR title format
+        if: github.actor != 'dependabot[bot]'
         uses: amannn/action-semantic-pull-request@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -47,6 +50,7 @@ jobs:
             docs
 
       - name: Validate commit messages
+        if: github.actor != 'dependabot[bot]'
         run: |
           git log --oneline origin/main..HEAD | while read line; do
             if ! echo "$line" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|chore)(\(.+\))?:"; then
