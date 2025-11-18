@@ -2,6 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Logo styling - white/light colored logos for both light and dark modes */
+/* Same white appearance in both modes */
+img.logo-image,
+img[src*="npm-icon.png"],
+img[src*="pypi-logo.png"] {
+  background: transparent;
+  mix-blend-mode: normal;
+  display: block;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+/* Ensure same white color in both modes */
+html.dark img.logo-image,
+html.dark img[src*="npm-icon.png"],
+html.dark img[src*="pypi-logo.png"],
+.dark img.logo-image,
+.dark img[src*="npm-icon.png"],
+.dark img[src*="pypi-logo.png"],
+html:not(.dark) img.logo-image,
+html:not(.dark) img[src*="npm-icon.png"],
+html:not(.dark) img[src*="pypi-logo.png"] {
+  opacity: 1 !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

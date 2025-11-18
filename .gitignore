@@ -27,6 +27,13 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# Google Cloud credentials (NEVER commit these!)
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+extreme-battery-*.json
+
 # vercel
 .vercel
 

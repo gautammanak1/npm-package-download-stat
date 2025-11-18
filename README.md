@@ -32,7 +32,8 @@ Visit the live application: [https://npm-package-download-stat.vercel.app](https
 - **Framer Motion** - Smooth animations
 - **Recharts** - Interactive chart library
 - **React Markdown** - Markdown rendering
-- **npm Public API** - Package download data
+- **npm Public API** - npm package download data
+- **PyPI Stats API** - PyPI package download statistics
 
 ## 📦 Installation
 

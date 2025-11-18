@@ -22,11 +22,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Create Google Cloud credentials file
+        run: |
+          if [ -n "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}" ]; then
+            echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}" > extreme-battery-463111-f5.json
+            echo "✅ Google Cloud credentials file created"
+          else
+            echo "⚠️ GOOGLE_APPLICATION_CREDENTIALS_JSON secret not found, BigQuery may not work"
+          fi
+
       - name: Build project
         run: npm run build
 
       - name: Deploy to Vercel Preview
         uses: amondnet/vercel-action@v25
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}

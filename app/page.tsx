@@ -10,10 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { DownloadChart } from "@/components/download-chart";
 import { PyPIDownloadChart } from "@/components/pypi-download-chart";
+import { PyPIExtendedStats } from "@/components/pypi-extended-stats";
 import { AuthorInfo } from "@/components/author-info";
 import { ReadmeViewer } from "@/components/readme-viewer";
+import { CelebrationAnimation } from "@/components/celebration-animation";
 import { getPackageDownloads, getPackageInfo, type DownloadRange } from "@/lib/npm-api";
-import { getPyPIDownloads, getPyPIPackageInfo, getPyPIOverallDownloads, type PyPIDownloadPoint } from "@/lib/pypi-api";
+import { getPyPIDownloads, getPyPIPackageInfo, getPyPIOverallDownloads, getPyPIExtendedStats, type PyPIDownloadPoint, type PyPIExtendedStats as PyPIExtendedStatsType } from "@/lib/pypi-api";
 import { format, subDays, subWeeks, subMonths, subYears } from "date-fns";
 
 type PackageManager = "npm" | "pypi";
@@ -28,9 +30,18 @@ export default function Home() {
   const [downloadData, setDownloadData] = useState<DownloadRange | null>(null);
   const [pypiDownloadData, setPypiDownloadData] = useState<PyPIDownloadPoint | null>(null);
   const [pypiOverallDownloads, setPypiOverallDownloads] = useState<{ total: number; period: string } | null>(null);
+  const [pypiExtendedStats, setPypiExtendedStats] = useState<PyPIExtendedStatsType | null>(null);
+  const [loadingExtendedStats, setLoadingExtendedStats] = useState(false);
+  const [customDateFrom, setCustomDateFrom] = useState("");
+  const [customDateTo, setCustomDateTo] = useState("");
+  const [singleDate, setSingleDate] = useState("");
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
   const [activeTab, setActiveTab] = useState("day");
   const [pypiPeriod, setPypiPeriod] = useState<"day" | "week" | "month">("month");
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [downloadIncrease, setDownloadIncrease] = useState(0);
+  const [previousDownloads, setPreviousDownloads] = useState<number | null>(null);
+  const [yesterdayDownloads, setYesterdayDownloads] = useState<number | null>(null);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -39,10 +50,11 @@ export default function Home() {
     }
 
     setLoading(true);
-    setError(null);
-    setPackageName(searchQuery.trim());
+      setError(null);
+      setPackageName(searchQuery.trim());
+      setShowCelebration(false); // Reset celebration on new search
 
-    try {
+      try {
       if (packageManager === "npm") {
         // Get npm package info
         const info = await getPackageInfo(searchQuery.trim());
@@ -65,6 +77,28 @@ export default function Home() {
         // Fetch download data
         const data = await getPackageDownloads(searchQuery.trim(), from, to);
         setDownloadData(data);
+        
+        // Get today's and yesterday's downloads for comparison
+        const today = format(new Date(), "yyyy-MM-dd");
+        const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
+        
+        const todayDownloads = data.downloads?.find(item => item.day === today)?.downloads || 0;
+        const yesterdayDownloads = data.downloads?.find(item => item.day === yesterday)?.downloads || 0;
+        
+        // Check if today's downloads increased compared to yesterday
+        if (yesterdayDownloads > 0 && todayDownloads > yesterdayDownloads) {
+          const increase = todayDownloads - yesterdayDownloads;
+          setDownloadIncrease(increase);
+          setShowCelebration(true);
+          // Auto-hide after 4 seconds
+          setTimeout(() => setShowCelebration(false), 4000);
+        }
+        
+        setYesterdayDownloads(yesterdayDownloads);
+        
+        // Also track total for other comparisons
+        const currentTotal = data.downloads?.reduce((sum, item) => sum + item.downloads, 0) || 0;
+        setPreviousDownloads(currentTotal);
         setPypiDownloadData(null);
         setPypiOverallDownloads(null);
       } else {
@@ -73,13 +107,43 @@ export default function Home() {
         setPackageInfo(info);
 
         // Fetch PyPI download data
-        const [downloadData, overallData] = await Promise.all([
-          getPyPIDownloads(searchQuery.trim(), pypiPeriod),
-          getPyPIOverallDownloads(searchQuery.trim()).catch(() => null)
-        ]);
+        // Try to get download stats, but don't fail if overall stats are unavailable
+        try {
+          const downloadData = await getPyPIDownloads(searchQuery.trim(), pypiPeriod);
+          setPypiDownloadData(downloadData);
+          
+          // Get today's and yesterday's downloads for comparison
+          const today = format(new Date(), "yyyy-MM-dd");
+          const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
+          
+          const todayDownloads = downloadData.data?.find(item => item.date === today)?.downloads || 0;
+          const yesterdayDownloads = downloadData.data?.find(item => item.date === yesterday)?.downloads || 0;
+          
+          // Check if today's downloads increased compared to yesterday
+          if (yesterdayDownloads > 0 && todayDownloads > yesterdayDownloads) {
+            const increase = todayDownloads - yesterdayDownloads;
+            setDownloadIncrease(increase);
+            setShowCelebration(true);
+            // Auto-hide after 4 seconds
+            setTimeout(() => setShowCelebration(false), 4000);
+          }
+          
+          setYesterdayDownloads(yesterdayDownloads);
+          
+          // Also track total for other comparisons
+          const currentTotal = downloadData.data?.reduce((sum, item) => sum + item.downloads, 0) || 0;
+          setPreviousDownloads(currentTotal);
+          
+          // Try to get overall downloads (optional, may not be available for all packages)
+          const overallData = await getPyPIOverallDownloads(searchQuery.trim());
+          setPypiOverallDownloads(overallData);
+        } catch (downloadError: any) {
+          // If download stats fail, still show package info but with error message
+          setPypiDownloadData(null);
+          setPypiOverallDownloads(null);
+          setError(downloadError.message || "Download statistics not available for this package. PyPI download stats may not be available for all packages.");
+        }
         
-        setPypiDownloadData(downloadData);
-        setPypiOverallDownloads(overallData);
         setDownloadData(null);
       }
     } catch (err: any) {
@@ -101,7 +165,19 @@ export default function Home() {
 
     try {
       const data = await getPackageDownloads(packageName, from, to);
+      const currentTotal = data.downloads?.reduce((sum, item) => sum + item.downloads, 0) || 0;
+      
+      // Check for increase
+      if (previousDownloads !== null && currentTotal > previousDownloads) {
+        const increase = currentTotal - previousDownloads;
+        setDownloadIncrease(increase);
+        setShowCelebration(true);
+        setTimeout(() => setShowCelebration(false), 3000);
+      }
+      
+      setPreviousDownloads(currentTotal);
       setDownloadData(data);
+      setError(null);
     } catch (err: any) {
       setError(err.message || "Failed to fetch download data");
     } finally {
@@ -109,14 +185,42 @@ export default function Home() {
     }
   };
 
-  const handleQuickRange = (days: number) => {
+  const handleQuickRange = async (days: number) => {
     const to = format(new Date(), "yyyy-MM-dd");
     const from = format(subDays(new Date(), days), "yyyy-MM-dd");
-    handleDateRangeChange(from, to);
+    setDateRange({ from, to });
+    setLoading(true);
+    try {
+      const data = await getPackageDownloads(packageName, from, to);
+      const currentTotal = data.downloads?.reduce((sum, item) => sum + item.downloads, 0) || 0;
+      
+      // Check for increase
+      if (previousDownloads !== null && currentTotal > previousDownloads) {
+        const increase = currentTotal - previousDownloads;
+        setDownloadIncrease(increase);
+        setShowCelebration(true);
+        setTimeout(() => setShowCelebration(false), 3000);
+      }
+      
+      setPreviousDownloads(currentTotal);
+      setDownloadData(data);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Celebration Animation */}
+      <CelebrationAnimation 
+        show={showCelebration} 
+        increase={downloadIncrease}
+        message="Your package is growing! 🚀"
+      />
+      
       <div className="container mx-auto px-4 py-8 max-w-7xl relative">
         {/* Theme Toggle - Fixed Position */}
         <div className="absolute top-4 right-4 z-10">
@@ -214,7 +318,7 @@ export default function Home() {
         </motion.div>
 
         {/* Results Section */}
-        {packageInfo && (downloadData || pypiDownloadData) && (
+        {packageInfo && (downloadData || (pypiDownloadData || (packageManager === "pypi" && packageInfo))) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -226,11 +330,19 @@ export default function Home() {
               <CardHeader>
                 <div className="flex items-start justify-between flex-wrap gap-4">
                   <div className="flex-1 min-w-[250px]">
-                    <CardTitle className="flex items-center gap-2 text-2xl">
+                    <CardTitle className="flex items-center gap-3 text-2xl">
                       {packageManager === "npm" ? (
-                        <Package className="h-6 w-6 text-primary" />
+                        <img 
+                          src="/logos/npm-icon.png" 
+                          alt="npm" 
+                          className="h-8 w-8 object-contain logo-image"
+                        />
                       ) : (
-                        <Code className="h-6 w-6 text-primary" />
+                        <img 
+                          src="/logos/pypi-logo.png" 
+                          alt="PyPI" 
+                          className="h-8 w-8 object-contain logo-image"
+                        />
                       )}
                       {packageManager === "npm" ? packageInfo.name : packageInfo.info?.name}
                     </CardTitle>
@@ -257,11 +369,17 @@ export default function Home() {
                   <div className="flex items-center gap-2">
                     <Download className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Downloads</p>
+                      <p className="text-sm text-muted-foreground">
+                        {packageManager === "pypi" && pypiExtendedStats?.totalDownloads !== undefined
+                          ? "Total Downloads (All Time)"
+                          : "Total Downloads"}
+                      </p>
                       <p className="text-lg font-semibold">
                         {packageManager === "npm" 
                           ? (downloadData?.downloads?.reduce((sum, item) => sum + item.downloads, 0).toLocaleString() || 0)
-                          : (pypiOverallDownloads?.total.toLocaleString() || pypiDownloadData?.data?.reduce((sum, item) => sum + item.downloads, 0).toLocaleString() || 0)
+                          : (pypiExtendedStats?.totalDownloads !== undefined
+                              ? pypiExtendedStats.totalDownloads.toLocaleString()
+                              : (pypiOverallDownloads?.total.toLocaleString() || pypiDownloadData?.data?.reduce((sum, item) => sum + item.downloads, 0).toLocaleString() || "N/A"))
                         }
                       </p>
                     </div>
@@ -395,78 +513,301 @@ export default function Home() {
             )}
 
             {/* PyPI Period Selector and Charts */}
-            {packageManager === "pypi" && pypiDownloadData && (
+            {packageManager === "pypi" && (
+              <>
+                {pypiDownloadData ? (
+                  <Card className="border-2 shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="text-2xl">Download Statistics</CardTitle>
+                      <CardDescription className="text-base">Visualize download trends over time</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="mb-4 flex gap-2">
+                        <Button
+                          variant={pypiPeriod === "day" ? "default" : "outline"}
+                          size="sm"
+                          onClick={async () => {
+                            setPypiPeriod("day");
+                            if (packageName) {
+                              setLoading(true);
+                              try {
+                                const data = await getPyPIDownloads(packageName, "day");
+                                const currentTotal = data.data?.reduce((sum, item) => sum + item.downloads, 0) || 0;
+                                
+                                // Check for increase
+                                if (previousDownloads !== null && currentTotal > previousDownloads) {
+                                  const increase = currentTotal - previousDownloads;
+                                  setDownloadIncrease(increase);
+                                  setShowCelebration(true);
+                                  setTimeout(() => setShowCelebration(false), 3000);
+                                }
+                                
+                                setPreviousDownloads(currentTotal);
+                                setPypiDownloadData(data);
+                                setError(null);
+                              } catch (err: any) {
+                                setError(err.message);
+                              } finally {
+                                setLoading(false);
+                              }
+                            }
+                          }}
+                        >
+                          Day
+                        </Button>
+                        <Button
+                          variant={pypiPeriod === "week" ? "default" : "outline"}
+                          size="sm"
+                          onClick={async () => {
+                            setPypiPeriod("week");
+                            if (packageName) {
+                              setLoading(true);
+                              try {
+                                const data = await getPyPIDownloads(packageName, "week");
+                                const currentTotal = data.data?.reduce((sum, item) => sum + item.downloads, 0) || 0;
+                                
+                                // Check for increase
+                                if (previousDownloads !== null && currentTotal > previousDownloads) {
+                                  const increase = currentTotal - previousDownloads;
+                                  setDownloadIncrease(increase);
+                                  setShowCelebration(true);
+                                  setTimeout(() => setShowCelebration(false), 3000);
+                                }
+                                
+                                setPreviousDownloads(currentTotal);
+                                setPypiDownloadData(data);
+                                setError(null);
+                              } catch (err: any) {
+                                setError(err.message);
+                              } finally {
+                                setLoading(false);
+                              }
+                            }
+                          }}
+                        >
+                          Week
+                        </Button>
+                        <Button
+                          variant={pypiPeriod === "month" ? "default" : "outline"}
+                          size="sm"
+                          onClick={async () => {
+                            setPypiPeriod("month");
+                            if (packageName) {
+                              setLoading(true);
+                              try {
+                                const data = await getPyPIDownloads(packageName, "month");
+                                const currentTotal = data.data?.reduce((sum, item) => sum + item.downloads, 0) || 0;
+                                
+                                // Check for increase
+                                if (previousDownloads !== null && currentTotal > previousDownloads) {
+                                  const increase = currentTotal - previousDownloads;
+                                  setDownloadIncrease(increase);
+                                  setShowCelebration(true);
+                                  setTimeout(() => setShowCelebration(false), 3000);
+                                }
+                                
+                                setPreviousDownloads(currentTotal);
+                                setPypiDownloadData(data);
+                                setError(null);
+                              } catch (err: any) {
+                                setError(err.message);
+                              } finally {
+                                setLoading(false);
+                              }
+                            }
+                          }}
+                        >
+                          Month
+                        </Button>
+                      </div>
+                      <PyPIDownloadChart data={pypiDownloadData} type={pypiPeriod} />
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="border-2 shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="text-2xl">Download Statistics</CardTitle>
+                      <CardDescription className="text-base">Download statistics not available</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex h-[400px] items-center justify-center text-center">
+                        <div>
+                          <p className="text-muted-foreground mb-2">
+                            Download statistics are not available for this package via public APIs.
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            PyPI does not provide download statistics for all packages through public APIs. Some packages may not have download data available.
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            <strong>Official Source:</strong> Use{" "}
+                            <a 
+                              href="https://packaging.python.org/en/latest/guides/analyzing-pypi-package-downloads/" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline font-semibold"
+                            >
+                              Google BigQuery
+                            </a>
+                            {" "}with the public dataset: <code className="bg-muted px-1 py-0.5 rounded text-xs">bigquery-public-data.pypi.file_downloads</code>
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            <strong>Alternative:</strong> Check{" "}
+                            <a 
+                              href={`https://pypistats.org/packages/${packageInfo?.info?.name || packageName}`}
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              pypistats.org
+                            </a>
+                            {" "}for community-maintained statistics.
+                          </p>
+                          <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-border">
+                            <p className="text-xs font-semibold mb-1">BigQuery Example Query:</p>
+                            <code className="text-xs block whitespace-pre-wrap break-all">
+{`SELECT COUNT(*) AS num_downloads
+FROM \`bigquery-public-data.pypi.file_downloads\`
+WHERE file.project = '${packageInfo?.info?.name || packageName}'
+  AND DATE(timestamp) BETWEEN 
+    DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) 
+    AND CURRENT_DATE()`}
+                            </code>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+
+            {/* Extended Statistics */}
+            {packageManager === "pypi" && packageInfo && (
               <Card className="border-2 shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-2xl">Download Statistics</CardTitle>
-                  <CardDescription className="text-base">Visualize download trends over time</CardDescription>
+                  <CardTitle className="text-2xl">Extended Statistics</CardTitle>
+                  <CardDescription>View comprehensive download statistics using BigQuery</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="mb-4 flex gap-2">
-                    <Button
-                      variant={pypiPeriod === "day" ? "default" : "outline"}
-                      size="sm"
-                      onClick={async () => {
-                        setPypiPeriod("day");
-                        if (packageName) {
-                          setLoading(true);
+                <CardContent className="space-y-4">
+                  {/* Custom Date Range */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Custom Date Range</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="date"
+                        placeholder="From Date"
+                        value={customDateFrom}
+                        onChange={(e) => setCustomDateFrom(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Input
+                        type="date"
+                        placeholder="To Date"
+                        value={customDateTo}
+                        onChange={(e) => setCustomDateTo(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={async () => {
+                          if (!packageName || !customDateFrom || !customDateTo) {
+                            setError("Please select both from and to dates");
+                            return;
+                          }
+                          setLoadingExtendedStats(true);
                           try {
-                            const data = await getPyPIDownloads(packageName, "day");
-                            setPypiDownloadData(data);
+                            const extendedStats = await getPyPIExtendedStats(
+                              packageName,
+                              "customRange",
+                              customDateFrom,
+                              customDateTo
+                            );
+                            setPypiExtendedStats(extendedStats);
+                            setError(null);
                           } catch (err: any) {
                             setError(err.message);
+                            setPypiExtendedStats(null);
                           } finally {
-                            setLoading(false);
+                            setLoadingExtendedStats(false);
                           }
-                        }
-                      }}
-                    >
-                      Day
-                    </Button>
-                    <Button
-                      variant={pypiPeriod === "week" ? "default" : "outline"}
-                      size="sm"
-                      onClick={async () => {
-                        setPypiPeriod("week");
-                        if (packageName) {
-                          setLoading(true);
-                          try {
-                            const data = await getPyPIDownloads(packageName, "week");
-                            setPypiDownloadData(data);
-                          } catch (err: any) {
-                            setError(err.message);
-                          } finally {
-                            setLoading(false);
-                          }
-                        }
-                      }}
-                    >
-                      Week
-                    </Button>
-                    <Button
-                      variant={pypiPeriod === "month" ? "default" : "outline"}
-                      size="sm"
-                      onClick={async () => {
-                        setPypiPeriod("month");
-                        if (packageName) {
-                          setLoading(true);
-                          try {
-                            const data = await getPyPIDownloads(packageName, "month");
-                            setPypiDownloadData(data);
-                          } catch (err: any) {
-                            setError(err.message);
-                          } finally {
-                            setLoading(false);
-                          }
-                        }
-                      }}
-                    >
-                      Month
-                    </Button>
+                        }}
+                        disabled={loadingExtendedStats || !customDateFrom || !customDateTo}
+                        variant="outline"
+                      >
+                        Query Range
+                      </Button>
+                    </div>
                   </div>
-                  <PyPIDownloadChart data={pypiDownloadData} type={pypiPeriod} />
+
+                  {/* Single Date */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Single Date</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="date"
+                        placeholder="Select Date"
+                        value={singleDate}
+                        onChange={(e) => setSingleDate(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={async () => {
+                          if (!packageName || !singleDate) {
+                            setError("Please select a date");
+                            return;
+                          }
+                          setLoadingExtendedStats(true);
+                          try {
+                            const extendedStats = await getPyPIExtendedStats(
+                              packageName,
+                              "customRange",
+                              singleDate,
+                              singleDate
+                            );
+                            setPypiExtendedStats(extendedStats);
+                            setError(null);
+                          } catch (err: any) {
+                            setError(err.message);
+                            setPypiExtendedStats(null);
+                          } finally {
+                            setLoadingExtendedStats(false);
+                          }
+                        }}
+                        disabled={loadingExtendedStats || !singleDate}
+                        variant="outline"
+                      >
+                        Query Date
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Load All Statistics */}
+                  <Button
+                    onClick={async () => {
+                      if (!packageName) return;
+                      setLoadingExtendedStats(true);
+                      try {
+                        const extendedStats = await getPyPIExtendedStats(packageName, "all");
+                        setPypiExtendedStats(extendedStats);
+                        setError(null);
+                      } catch (err: any) {
+                        setError(err.message);
+                        setPypiExtendedStats(null);
+                      } finally {
+                        setLoadingExtendedStats(false);
+                      }
+                    }}
+                    disabled={loadingExtendedStats}
+                    className="w-full"
+                  >
+                    {loadingExtendedStats ? "Loading Extended Statistics..." : "Load All Extended Statistics"}
+                  </Button>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Extended Statistics Display */}
+            {packageManager === "pypi" && pypiExtendedStats && packageName && (
+              <PyPIExtendedStats stats={pypiExtendedStats} packageName={packageName} />
             )}
 
             {/* Author Information */}

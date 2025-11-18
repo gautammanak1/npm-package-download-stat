@@ -97,60 +97,74 @@ export function DownloadChart({ data, type }: DownloadChartProps) {
           Total downloads: <span className="font-semibold text-foreground">{totalDownloads.toLocaleString()}</span>
         </p>
       </div>
-      <ResponsiveContainer width="100%" height={400}>
+      <ResponsiveContainer width="100%" height={400} className="min-h-[300px]">
         {type === "day" ? (
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+          <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-muted opacity-50" />
             <XAxis
               dataKey="date"
               className="text-xs"
-              tick={{ fill: "currentColor" }}
+              tick={{ fill: "currentColor", fontSize: 12 }}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              interval="preserveStartEnd"
             />
             <YAxis
               className="text-xs"
-              tick={{ fill: "currentColor" }}
+              tick={{ fill: "currentColor", fontSize: 12 }}
+              width={60}
             />
             <Tooltip
               contentStyle={{
                 backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "var(--radius)",
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
               }}
-              labelStyle={{ color: "hsl(var(--foreground))" }}
+              labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
+              cursor={{ stroke: "hsl(var(--primary))", strokeWidth: 1 }}
             />
             <Line
               type="monotone"
               dataKey="downloads"
               stroke="hsl(var(--primary))"
-              strokeWidth={2}
-              dot={{ fill: "hsl(var(--primary))", r: 4 }}
-              activeDot={{ r: 6 }}
+              strokeWidth={3}
+              dot={{ fill: "hsl(var(--primary))", r: 4, strokeWidth: 2, stroke: "hsl(var(--card))" }}
+              activeDot={{ r: 7, strokeWidth: 2, stroke: "hsl(var(--card))" }}
             />
           </LineChart>
         ) : (
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+          <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-muted opacity-50" />
             <XAxis
               dataKey="date"
               className="text-xs"
-              tick={{ fill: "currentColor" }}
+              tick={{ fill: "currentColor", fontSize: 12 }}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              interval="preserveStartEnd"
             />
             <YAxis
               className="text-xs"
-              tick={{ fill: "currentColor" }}
+              tick={{ fill: "currentColor", fontSize: 12 }}
+              width={60}
             />
             <Tooltip
               contentStyle={{
                 backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "var(--radius)",
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
               }}
-              labelStyle={{ color: "hsl(var(--foreground))" }}
+              labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
+              cursor={{ fill: "hsl(var(--primary))", opacity: 0.1 }}
             />
             <Bar
               dataKey="downloads"
               fill="hsl(var(--primary))"
-              radius={[4, 4, 0, 0]}
+              radius={[6, 6, 0, 0]}
             />
           </BarChart>
         )}
