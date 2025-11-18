@@ -344,9 +344,14 @@ export function PyPIExtendedStats({ stats, packageName }: PyPIExtendedStatsProps
                   className="mx-auto aspect-square w-full max-w-[300px]"
                 >
                   <PieChart>
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent hideLabel />}
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "var(--radius)",
+                        color: "hsl(var(--foreground))",
+                      }}
+                      labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
                     />
                     <Pie
                       data={topCountriesChartData}

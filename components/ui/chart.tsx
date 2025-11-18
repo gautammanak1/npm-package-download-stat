@@ -30,14 +30,17 @@ export function ChartContainer({ id, config, className, children }: ChartContain
 interface ChartTooltipProps {
   content?: React.ReactNode
   cursor?: boolean | object
-  children: React.ReactNode
+  children?: React.ReactNode
 }
 
 export function ChartTooltip({ content, cursor, children }: ChartTooltipProps) {
-  return React.cloneElement(children as React.ReactElement, {
-    content,
-    cursor,
-  })
+  if (children) {
+    return React.cloneElement(children as React.ReactElement, {
+      content,
+      cursor,
+    })
+  }
+  return null
 }
 
 // Chart tooltip content component

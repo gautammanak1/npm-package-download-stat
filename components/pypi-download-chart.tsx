@@ -94,16 +94,17 @@ export function PyPIDownloadChart({ data, type }: PyPIDownloadChartProps) {
             tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
             width={60}
           />
-          <ChartTooltip
-            content={
-              <ChartTooltipContent
-                className="w-[150px]"
-                nameKey="downloads"
-                labelFormatter={(value) => {
-                  return format(new Date(value), "MMM dd, yyyy");
-                }}
-              />
-            }
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
+              borderRadius: "var(--radius)",
+              color: "hsl(var(--foreground))",
+            }}
+            labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
+            labelFormatter={(value) => {
+              return format(new Date(value), "MMM dd, yyyy");
+            }}
           />
           <Bar dataKey={activeChart} fill={`var(--color-${activeChart})`} radius={[6, 6, 0, 0]} />
         </BarChart>
