@@ -113,21 +113,12 @@ export function CelebrationAnimation({ show, increase, message }: CelebrationAni
                 <span className="text-sm">more downloads today!</span>
               </motion.div>
               
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="text-sm opacity-90 mt-2"
-              >
-                Your package is growing! 🚀
-              </motion.p>
-
               {message && (
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                  className="text-sm opacity-90"
+                  className="text-sm opacity-90 mt-2"
                 >
                   {message}
                 </motion.p>

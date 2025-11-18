@@ -91,7 +91,7 @@ export function PyPIExtendedStats({ stats, packageName }: PyPIExtendedStatsProps
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold text-primary">
-                  {stats.totalDownloads.toLocaleString()}
+                  {(stats.totalDownloads || 0).toLocaleString()}
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">
                   Since package launch
@@ -116,7 +116,7 @@ export function PyPIExtendedStats({ stats, packageName }: PyPIExtendedStatsProps
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold text-primary">
-                  {stats.totalDownloadsThisYear.toLocaleString()}
+                  {(stats.totalDownloadsThisYear || 0).toLocaleString()}
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">
                   {new Date().getFullYear()}
