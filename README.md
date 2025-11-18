@@ -83,35 +83,60 @@ yarn start
 
 ## 🚢 Deployment
 
-### Deploy to Vercel (Recommended)
+### Deploy to Vercel via CI/CD Only
 
-This project is configured for automatic deployment on Vercel via CI/CD pipeline.
+This project uses **CI/CD pipeline only** for deployments. Vercel automatic builds are disabled.
 
-#### Option 1: Deploy via Vercel Dashboard
+#### Step 1: Connect Repository to Vercel
 
-1. Push your code to GitHub
-2. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-3. Click "Add New Project"
-4. Import your GitHub repository
-5. Vercel will automatically detect Next.js and configure settings
-6. Click "Deploy"
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+2. Click **"Add New Project"**
+3. Import your GitHub repository: `gautammanak1/npm-package-download-stat`
+4. Vercel will auto-detect Next.js settings
+5. Click **"Deploy"** (this will do initial deployment)
 
-#### Option 2: Deploy via Vercel CLI
+#### Step 2: Disable Automatic Builds in Vercel
 
-```bash
-npm i -g vercel
-vercel
-```
+**Important**: After initial deployment, disable automatic builds:
 
-#### Automatic CI/CD Pipeline
+1. Go to your project in Vercel Dashboard
+2. Navigate to **Settings > Git**
+3. Under **"Production Branch"**, find **"Automatic deployments"**
+4. **Disable** automatic deployments by toggling it off
+5. Or go to **Settings > Git > Deploy Hooks** and disable automatic deployments
 
-The project includes GitHub Actions workflow for automatic deployment:
+**Alternative Method**:
+- Go to **Settings > Git**
+- Scroll to **"Deploy Hooks"**
+- Disable automatic deployments for `main` branch
 
-- **On Push to Main**: Automatically deploys to Vercel production
-- **On Pull Request**: Creates preview deployment
-- **Build Status**: Shows build status in GitHub
+#### Step 3: Setup GitHub Secrets for CI/CD
 
-The CI/CD pipeline is configured in `.github/workflows/vercel.yml`
+1. Get Vercel credentials:
+   - **Vercel Token**: [Vercel Settings > Tokens](https://vercel.com/account/tokens)
+   - **Organization ID**: [Vercel Settings > General](https://vercel.com/account/general) (Team ID)
+   - **Project ID**: Project Settings > General (Project ID)
+
+2. Add GitHub Secrets:
+   - Go to repository **Settings > Secrets and variables > Actions**
+   - Add: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
+
+#### Step 4: Enable GitHub Actions
+
+1. Repository **Settings > Actions > General**
+2. Under **"Workflow permissions"**:
+   - ✅ **Read and write permissions**
+   - ✅ **Allow GitHub Actions to create and approve pull requests**
+
+#### CI/CD Pipeline
+
+The project uses GitHub Actions for all deployments:
+
+- **On Push to Main**: Automatically deploys to Vercel production via CI/CD
+- **On Pull Request**: Creates preview deployment via CI/CD
+- **Build Status**: Shows build status in GitHub Actions
+
+**Note**: All deployments now happen through CI/CD only. Vercel won't auto-build on git push.
 
 ### Environment Variables
 
