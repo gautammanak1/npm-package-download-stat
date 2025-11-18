@@ -319,9 +319,12 @@ export function PyPIExtendedStats({ stats, packageName }: PyPIExtendedStatsProps
                   />
                   <Bar
                     dataKey="downloads"
-                    fill="hsl(var(--primary))"
                     radius={[6, 6, 0, 0]}
-                  />
+                  >
+                    {topDatesThisMonthChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COUNTRY_COLORS[index % COUNTRY_COLORS.length]} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
