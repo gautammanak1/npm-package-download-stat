@@ -1,0 +1,75 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-pr:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check PR title format
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            chore
+          scopes: |
+            charts
+            api
+            ui
+            components
+            config
+            docs
+
+      - name: Validate commit messages
+        run: |
+          git log --oneline origin/main..HEAD | while read line; do
+            if ! echo "$line" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|chore)(\(.+\))?:"; then
+              echo "❌ Invalid commit message: $line"
+              echo "Commit messages must follow Conventional Commits format"
+              exit 1
+            fi
+          done
+
+      - name: Check file size
+        run: |
+          MAX_SIZE=1048576  # 1MB
+          for file in $(git diff --name-only origin/main...HEAD); do
+            size=$(git cat-file -s "HEAD:$file" 2>/dev/null || echo 0)
+            if [ "$size" -gt "$MAX_SIZE" ]; then
+              echo "❌ File $file exceeds maximum size of 1MB"
+              exit 1
+            fi
+          done
+
+      - name: Check for large files
+        run: |
+          if git diff --name-only origin/main...HEAD | grep -E '\.(png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$' | xargs -I {} sh -c 'test $(git cat-file -s "HEAD:{}" 2>/dev/null || echo 0) -gt 500000'; then
+            echo "⚠️ Warning: Large image/font files detected. Consider optimizing them."
+          fi
+
