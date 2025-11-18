@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     # Skip commit message validation for Dependabot PRs
     if: github.actor != 'dependabot[bot]'
+    permissions:
+      contents: read
+      pull-requests: read
 
     steps:
       - name: Checkout code
