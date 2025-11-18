@@ -38,7 +38,12 @@ jobs:
       - name: Set Vercel environment variable
         run: |
           if [ -n "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}" ]; then
-            echo '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}' | npx vercel env add GOOGLE_APPLICATION_CREDENTIALS_JSON preview --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }} --yes || echo "⚠️ Environment variable may already exist or failed to set"
+            echo '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}' | \
+            npx vercel env add GOOGLE_APPLICATION_CREDENTIALS_JSON preview \
+            --token ${{ secrets.VERCEL_TOKEN }} \
+            --scope ${{ secrets.VERCEL_ORG_ID }} \
+            --project ${{ secrets.VERCEL_PROJECT_ID }} \
+            --yes 2>&1 || echo "⚠️ Environment variable may already exist or failed to set"
           fi
 
       - name: Deploy to Vercel Preview
