@@ -338,11 +338,7 @@ export function PyPIExtendedStats({ stats, packageName }: PyPIExtendedStatsProps
                 <CardDescription>Downloads by country in {new Date().getFullYear()}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-1 justify-center pb-0">
-                <ChartContainer
-                  id="top-countries"
-                  config={topCountriesChartConfig}
-                  className="mx-auto aspect-square w-full max-w-[300px]"
-                >
+                <ResponsiveContainer width="100%" height={300} className="min-h-[250px]">
                   <PieChart>
                     <Tooltip
                       contentStyle={{
@@ -357,7 +353,10 @@ export function PyPIExtendedStats({ stats, packageName }: PyPIExtendedStatsProps
                       data={topCountriesChartData}
                       dataKey="downloads"
                       nameKey="country"
+                      cx="50%"
+                      cy="50%"
                       innerRadius={60}
+                      outerRadius={100}
                       strokeWidth={5}
                       activeIndex={activeCountry ? topCountriesChartData.findIndex(item => item.country === activeCountry) : -1}
                       activeShape={({
@@ -412,7 +411,7 @@ export function PyPIExtendedStats({ stats, packageName }: PyPIExtendedStatsProps
                       />
                     </Pie>
                   </PieChart>
-                </ChartContainer>
+                </ResponsiveContainer>
               </CardContent>
               <CardContent className="pt-4">
                 <div className="space-y-2">

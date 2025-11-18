@@ -66,49 +66,54 @@ export function PyPIDownloadChart({ data, type }: PyPIDownloadChartProps) {
           <p className="text-2xl font-bold">{totalDownloads.toLocaleString()}</p>
         </div>
       </div>
-      <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
-        <BarChart
-          accessibilityLayer
-          data={chartData}
-          margin={{
-            left: 12,
-            right: 12,
-          }}
-        >
-          <CartesianGrid vertical={false} />
-          <XAxis
-            dataKey="date"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            minTickGap={32}
-            tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
-            tickFormatter={(value) => {
-              const date = new Date(value);
-              return format(date, type === "day" ? "MMM dd" : type === "week" ? "MMM dd" : "MMM yyyy");
+      <div data-chart="pypi-downloads">
+        <ChartStyle id="pypi-downloads" config={chartConfig} />
+        <ResponsiveContainer width="100%" height={400} className="min-h-[300px]">
+          <BarChart
+            data={chartData}
+            margin={{
+              top: 5,
+              right: 10,
+              left: 0,
+              bottom: 5,
             }}
-          />
-          <YAxis
-            tickLine={false}
-            axisLine={false}
-            tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
-            width={60}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
-              borderRadius: "var(--radius)",
-              color: "hsl(var(--foreground))",
-            }}
-            labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
-            labelFormatter={(value) => {
-              return format(new Date(value), "MMM dd, yyyy");
-            }}
-          />
-          <Bar dataKey={activeChart} fill={`var(--color-${activeChart})`} radius={[6, 6, 0, 0]} />
-        </BarChart>
-      </ChartContainer>
+          >
+            <CartesianGrid strokeDasharray="3 3" className="stroke-muted opacity-50" />
+            <XAxis
+              dataKey="date"
+              tickLine={false}
+              axisLine={false}
+              tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              tickFormatter={(value) => {
+                const date = new Date(value);
+                return format(date, type === "day" ? "MMM dd" : type === "week" ? "MMM dd" : "MMM yyyy");
+              }}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
+              width={60}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "var(--radius)",
+                color: "hsl(var(--foreground))",
+              }}
+              labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
+              labelFormatter={(value) => {
+                return format(new Date(value), "MMM dd, yyyy");
+              }}
+            />
+            <Bar dataKey={activeChart} fill={`var(--color-${activeChart})`} radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </motion.div>
   );
 }
