@@ -116,6 +116,31 @@ export async function GET(request: NextRequest) {
 
   const normalizedName = packageName.toLowerCase();
 
+  // Handle overall downloads request
+  if (overall) {
+    try {
+      const url = `https://pypistats.org/api/packages/${normalizedName}/overall`;
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(5000),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return NextResponse.json({
+          success: true,
+          overall: data,
+        });
+      }
+    } catch (error) {
+      // Return null if request fails
+    }
+    
+    return NextResponse.json({
+      success: true,
+      overall: null,
+    });
+  }
+
   try {
     // Try BigQuery first (official source)
     const bigquery = await getBigQueryClient();
