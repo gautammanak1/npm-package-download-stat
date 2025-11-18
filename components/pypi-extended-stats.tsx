@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState as ReactUseState } from "react";
+import * as React from "react";
 import {
   BarChart,
   Bar,
@@ -14,7 +15,11 @@ import {
   PieChart,
   Pie,
   Cell,
+  Label,
+  Sector,
 } from "recharts";
+import type { PieSectorDataItem } from "recharts/types/polar/Pie";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartStyle, type ChartConfig } from "@/components/ui/chart";
 import { format, parseISO } from "date-fns";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
@@ -48,6 +53,12 @@ const COUNTRY_COLORS = [
 ];
 
 export function PyPIExtendedStats({ stats, packageName }: PyPIExtendedStatsProps) {
+  const [activeCountry, setActiveCountry] = ReactUseState<string | null>(
+    stats.topCountries && stats.topCountries.length > 0 
+      ? stats.topCountries[0].country.toLowerCase().replace(/\s+/g, '')
+      : null
+  );
+  
   const monthlyChartData = useMemo(() => {
     if (!stats.monthlyDownloads || stats.monthlyDownloads.length === 0) return [];
     return stats.monthlyDownloads.map((item) => ({
@@ -55,6 +66,29 @@ export function PyPIExtendedStats({ stats, packageName }: PyPIExtendedStatsProps
       downloads: item.downloads,
     }));
   }, [stats.monthlyDownloads]);
+
+  const topCountriesChartData = useMemo(() => {
+    if (!stats.topCountries || stats.topCountries.length === 0) return [];
+    return stats.topCountries.map((item, index) => ({
+      country: item.country.toLowerCase().replace(/\s+/g, ''),
+      countryLabel: item.country,
+      downloads: item.downloads,
+      fill: `var(--color-country-${index})`,
+    }));
+  }, [stats.topCountries]);
+
+  const topCountriesChartConfig = useMemo(() => {
+    const config: ChartConfig = {
+      downloads: { label: "Downloads" },
+    };
+    topCountriesChartData.forEach((item, index) => {
+      config[`country-${index}`] = {
+        label: item.countryLabel,
+        color: COUNTRY_COLORS[index % COUNTRY_COLORS.length],
+      };
+    });
+    return config;
+  }, [topCountriesChartData]);
 
   const topDatesChartData = useMemo(() => {
     if (!stats.topDates || stats.topDates.length === 0) return [];
@@ -153,7 +187,7 @@ export function PyPIExtendedStats({ stats, packageName }: PyPIExtendedStatsProps
                   />
                   <YAxis
                     className="text-xs"
-                    tick={{ fill: "currentColor", fontSize: 12 }}
+                    tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
                     width={60}
                   />
                   <Tooltip
@@ -162,8 +196,10 @@ export function PyPIExtendedStats({ stats, packageName }: PyPIExtendedStatsProps
                       border: "1px solid hsl(var(--border))",
                       borderRadius: "var(--radius)",
                       boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                      color: "hsl(var(--foreground))",
                     }}
                     labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
+                    itemStyle={{ color: "hsl(var(--foreground))" }}
                     cursor={{ fill: "hsl(var(--primary))", opacity: 0.1 }}
                   />
                   <Bar
@@ -286,13 +322,14 @@ export function PyPIExtendedStats({ stats, packageName }: PyPIExtendedStatsProps
 
       {/* Top Countries Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {stats.topCountries && stats.topCountries.length > 0 && (
+        {stats.topCountries && stats.topCountries.length > 0 && topCountriesChartData.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
           >
-            <Card className="border-2 shadow-lg">
+            <Card className="border-2 shadow-lg" data-chart="top-countries">
+              <ChartStyle id="top-countries" config={topCountriesChartConfig} />
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <Globe className="h-5 w-5 text-primary" />
@@ -300,40 +337,101 @@ export function PyPIExtendedStats({ stats, packageName }: PyPIExtendedStatsProps
                 </CardTitle>
                 <CardDescription>Downloads by country in {new Date().getFullYear()}</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300} className="min-h-[250px]">
+              <CardContent className="flex flex-1 justify-center pb-0">
+                <ChartContainer
+                  id="top-countries"
+                  config={topCountriesChartConfig}
+                  className="mx-auto aspect-square w-full max-w-[300px]"
+                >
                   <PieChart>
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent hideLabel />}
+                    />
                     <Pie
-                      data={stats.topCountries}
+                      data={topCountriesChartData}
                       dataKey="downloads"
                       nameKey="country"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      label={({ country, downloads }) => `${country}: ${downloads.toLocaleString()}`}
+                      innerRadius={60}
+                      strokeWidth={5}
+                      activeIndex={activeCountry ? topCountriesChartData.findIndex(item => item.country === activeCountry) : -1}
+                      activeShape={({
+                        outerRadius = 0,
+                        ...props
+                      }: PieSectorDataItem) => (
+                        <g>
+                          <Sector {...props} outerRadius={outerRadius + 10} />
+                          <Sector
+                            {...props}
+                            outerRadius={outerRadius + 25}
+                            innerRadius={outerRadius + 12}
+                          />
+                        </g>
+                      )}
                     >
-                      {stats.topCountries.map((entry, index) => (
+                      {topCountriesChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COUNTRY_COLORS[index % COUNTRY_COLORS.length]} />
                       ))}
+                      <Label
+                        content={({ viewBox }) => {
+                          if (viewBox && "cx" in viewBox && "cy" in viewBox && activeCountry) {
+                            const activeData = topCountriesChartData.find(item => item.country === activeCountry);
+                            if (activeData) {
+                              return (
+                                <text
+                                  x={viewBox.cx}
+                                  y={viewBox.cy}
+                                  textAnchor="middle"
+                                  dominantBaseline="middle"
+                                >
+                                  <tspan
+                                    x={viewBox.cx}
+                                    y={viewBox.cy}
+                                    className="fill-foreground text-3xl font-bold"
+                                  >
+                                    {activeData.downloads.toLocaleString()}
+                                  </tspan>
+                                  <tspan
+                                    x={viewBox.cx}
+                                    y={(viewBox.cy || 0) + 24}
+                                    className="fill-muted-foreground text-sm"
+                                  >
+                                    {activeData.countryLabel}
+                                  </tspan>
+                                </text>
+                              );
+                            }
+                          }
+                          return null;
+                        }}
+                      />
                     </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "var(--radius)",
-                      }}
-                    />
                   </PieChart>
-                </ResponsiveContainer>
-                <div className="mt-4 space-y-2">
-                  {stats.topCountries.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between text-sm">
+                </ChartContainer>
+              </CardContent>
+              <CardContent className="pt-4">
+                <div className="space-y-2">
+                  {topCountriesChartData.map((item, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setActiveCountry(item.country)}
+                      className={`w-full flex items-center justify-between text-sm p-2 rounded-lg transition-colors ${
+                        activeCountry === item.country 
+                          ? 'bg-muted' 
+                          : 'hover:bg-muted/50'
+                      }`}
+                    >
                       <span className="flex items-center gap-2">
-                        <MapPin className="h-3 w-3 text-muted-foreground" />
-                        {item.country}
+                        <span
+                          className="flex h-3 w-3 shrink-0 rounded-xs"
+                          style={{
+                            backgroundColor: COUNTRY_COLORS[index % COUNTRY_COLORS.length],
+                          }}
+                        />
+                        {item.countryLabel}
                       </span>
                       <span className="font-semibold">{item.downloads.toLocaleString()}</span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </CardContent>
