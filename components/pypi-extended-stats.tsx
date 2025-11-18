@@ -19,7 +19,7 @@ import {
   Sector,
 } from "recharts";
 import type { PieSectorDataItem } from "recharts/types/polar/Pie";
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartStyle, type ChartConfig } from "@/components/ui/chart";
+import { ChartContainer, ChartStyle, type ChartConfig } from "@/components/ui/chart";
 import { format, parseISO } from "date-fns";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
