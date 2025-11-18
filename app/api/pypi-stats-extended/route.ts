@@ -82,6 +82,19 @@ async function getBigQueryClient() {
       console.log('⚠️ No credentials found, attempting Application Default Credentials');
     }
     
+    // Ensure project ID is set
+    if (!bigqueryOptions.projectId && process.env.GOOGLE_CLOUD_PROJECT) {
+      bigqueryOptions.projectId = process.env.GOOGLE_CLOUD_PROJECT;
+    }
+    
+    // Log configuration for debugging
+    console.log('🔍 BigQuery Options:', {
+      hasCredentials: !!bigqueryOptions.credentials,
+      hasKeyFilename: !!bigqueryOptions.keyFilename,
+      projectId: bigqueryOptions.projectId || 'not set',
+      hasEnvVar: !!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
+    });
+    
     bigqueryClient = new BigQuery(bigqueryOptions);
     
     // Test connection
@@ -90,6 +103,7 @@ async function getBigQueryClient() {
       console.log(`✅ BigQuery connected to project: ${project}`);
     } catch (testError: any) {
       console.warn('⚠️ BigQuery connection test failed:', testError.message);
+      console.warn('💡 Debug info - Project ID:', bigqueryOptions.projectId || 'not set');
     }
     
     return bigqueryClient;
