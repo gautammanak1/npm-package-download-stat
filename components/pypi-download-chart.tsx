@@ -13,7 +13,7 @@ import {
 import { format, parseISO } from "date-fns";
 import { PyPIDownloadPoint } from "@/lib/pypi-api";
 import { motion } from "framer-motion";
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartStyle, type ChartConfig } from "@/components/ui/chart";
+import { ChartContainer, ChartStyle, type ChartConfig } from "@/components/ui/chart";
 
 interface PyPIDownloadChartProps {
   data: PyPIDownloadPoint;
